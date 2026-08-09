@@ -28,6 +28,7 @@
   --sun: #ff8a8a;
   --sat: #7ab8ff;
   --pay: #4ade80;
+  --memo: #c084fc;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
@@ -72,12 +73,14 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
 .tag { margin-top:auto; font-size:.6rem; line-height:1.15; word-break:break-all; }
 .tag.work-tag { color: var(--accent); font-weight:700; }
 .tag.off-tag { color: var(--off); font-weight:700; }
+.memo-dot { position:absolute; top:5px; right:5px; width:6px; height:6px; border-radius:50%; background:var(--memo); }
 
 .week-list { display:flex; flex-direction:column; gap:8px; }
-.week-row { all:unset; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border-radius:12px; background:var(--panel); border:1px solid var(--border); cursor:pointer; }
+.week-row { all:unset; display:flex; flex-direction:column; gap:6px; padding:12px 14px; border-radius:12px; background:var(--panel); border:1px solid var(--border); cursor:pointer; }
 .week-row.work { background:var(--accent-bg); border-color: rgba(62,166,255,0.4); }
 .week-row.off { background:var(--off-bg); border-color: rgba(255,122,144,0.35); }
 .week-row.today { outline:2px solid var(--today); outline-offset:-1px; }
+.week-row-main { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .week-date { display:flex; flex-direction:column; align-items:center; min-width:44px; }
 .week-date .wd { font-size:.7rem; color:var(--muted); }
 .week-date .dn { font-size:1.1rem; font-weight:700; }
@@ -86,6 +89,7 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
 .week-status { font-size:.9rem; font-weight:700; }
 .week-status.work-tag { color: var(--accent); }
 .week-status.off-tag { color: var(--off); }
+.week-memo { font-size:.72rem; color:var(--memo); text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 .summary { margin-top:16px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:14px 8px; display:grid; grid-template-columns: repeat(3,1fr); gap:6px; font-size:.72rem; text-align:center; }
 .summary .stat b { display:block; margin-top:5px; font-size:.95rem; color: var(--accent); }
@@ -102,6 +106,7 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
 .field { margin-bottom:14px; }
 .field label { display:block; font-size:.8rem; color:var(--muted); margin-bottom:6px; }
 .field input[type=time] { width:100%; background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:10px; border-radius:8px; font-size:1rem; }
+.field textarea { width:100%; background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:10px; border-radius:8px; font-size:.9rem; font-family:inherit; resize:vertical; }
 .time-row { display:flex; gap:8px; }
 .time-row input[type=time] { flex:1; }
 .mic-btn { flex:0 0 44px; background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:8px; font-size:1.1rem; }
@@ -172,7 +177,7 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
     <div class="stat pay"><span id="sum-label-pay">今月の概算給与</span><b id="sum-pay">¥0</b></div>
   </div>
 
-  <p class="hint">日付をタップして開始・終了時間を入力できます</p>
+  <p class="hint">日付をタップして開始・終了時間やメモを入力できます</p>
 </div>
 
 <div class="footer-actions">
@@ -200,6 +205,10 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
     </div>
     <p class="voice-hint">🎤をタップして「9時」「9時半」「17時30分」のように話すと自動入力されます</p>
     <p class="pay-preview" id="pay-preview"></p>
+    <div class="field">
+      <label for="memo-input">メモ</label>
+      <textarea id="memo-input" rows="2" placeholder="例: 誰かに代わってもらった、集合場所など"></textarea>
+    </div>
     <div class="sheet-actions">
       <button class="btn-cancel" id="cancel-btn">キャンセル</button>
       <button class="btn-clear" id="clear-btn">休みにする</button>
@@ -211,7 +220,7 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
 <div class="overlay hidden" id="reset-overlay">
   <div class="sheet confirm-box">
     <h2>全シフトを削除しますか？</h2>
-    <p>この操作は取り消せません。すべての登録済みシフトが削除されます。</p>
+    <p>この操作は取り消せません。すべての登録済みシフトとメモが削除されます。</p>
     <div class="confirm-actions">
       <button class="no" id="reset-no">キャンセル</button>
       <button class="yes" id="reset-yes">削除する</button>
@@ -228,7 +237,7 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw);
     } catch(e) {}
-    return { shifts: {}, viewMode: "month" };
+    return { shifts: {}, memos: {}, viewMode: "month" };
   }
   function saveState(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -236,6 +245,7 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
 
   const state = loadState();
   if (!state.viewMode) state.viewMode = "month";
+  if (!state.memos) state.memos = {};
 
   const today = new Date();
   let viewYear = today.getFullYear();
@@ -265,6 +275,7 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
   const startInput = document.getElementById("start-input");
   const endInput = document.getElementById("end-input");
   const payPreview = document.getElementById("pay-preview");
+  const memoInput = document.getElementById("memo-input");
 
   const resetOverlay = document.getElementById("reset-overlay");
 
@@ -374,6 +385,11 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
       btn.appendChild(tag);
 
       cell.appendChild(btn);
+      if (state.memos[key]){
+        const dot = document.createElement("span");
+        dot.className = "memo-dot";
+        cell.appendChild(dot);
+      }
       grid.appendChild(cell);
     }
 
@@ -427,8 +443,20 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
         status.textContent = "休み";
       }
 
-      row.appendChild(dateBox);
-      row.appendChild(status);
+      const main = document.createElement("span");
+      main.className = "week-row-main";
+      main.appendChild(dateBox);
+      main.appendChild(status);
+      row.appendChild(main);
+
+      const memo = state.memos[key];
+      if (memo){
+        const memoLine = document.createElement("span");
+        memoLine.className = "week-memo";
+        memoLine.textContent = `📝 ${memo}`;
+        row.appendChild(memoLine);
+      }
+
       weekList.appendChild(row);
     }
 
@@ -454,6 +482,7 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
     sheetDate.textContent = `${y}年${m}月${d}日`;
     startInput.value = shift ? shift.start : "";
     endInput.value = shift ? shift.end : "";
+    memoInput.value = state.memos[key] || "";
     updatePayPreview();
     dayOverlay.classList.remove("hidden");
   }
@@ -471,11 +500,23 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
     if (!activeDateKey) return;
     const start = startInput.value;
     const end = endInput.value;
-    if (!start || !end){
-      alert("開始時間と終了時間を入力してください");
+    if ((start && !end) || (!start && end)){
+      alert("開始時間と終了時間は両方入力するか、両方空にしてください");
       return;
     }
-    state.shifts[activeDateKey] = { start, end };
+    if (start && end){
+      state.shifts[activeDateKey] = { start, end };
+    } else {
+      delete state.shifts[activeDateKey];
+    }
+
+    const memo = memoInput.value.trim();
+    if (memo){
+      state.memos[activeDateKey] = memo;
+    } else {
+      delete state.memos[activeDateKey];
+    }
+
     saveState();
     closeDayModal();
     render();
@@ -484,6 +525,14 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
   document.getElementById("clear-btn").addEventListener("click", () => {
     if (!activeDateKey) return;
     delete state.shifts[activeDateKey];
+
+    const memo = memoInput.value.trim();
+    if (memo){
+      state.memos[activeDateKey] = memo;
+    } else {
+      delete state.memos[activeDateKey];
+    }
+
     saveState();
     closeDayModal();
     render();
@@ -599,6 +648,7 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
   });
   document.getElementById("reset-yes").addEventListener("click", () => {
     state.shifts = {};
+    state.memos = {};
     saveState();
     resetOverlay.classList.add("hidden");
     render();

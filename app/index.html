@@ -7,28 +7,28 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#3ea6ff">
+<meta name="theme-color" content="#7c5cff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="バイトシフト">
 <style>
 :root {
-  --bg: #0d0f14;
-  --panel: #171a22;
-  --panel2: #1f2330;
-  --border: #2a2f3d;
-  --text: #e8eaf0;
-  --muted: #7c8296;
-  --accent: #3ea6ff;
-  --accent-bg: rgba(62,166,255,0.16);
-  --off: #ff7a90;
-  --off-bg: rgba(255,122,144,0.12);
-  --today: #ffcf5c;
-  --danger: #ff5c6c;
-  --sun: #ff8a8a;
-  --sat: #7ab8ff;
-  --pay: #4ade80;
-  --memo: #c084fc;
+  --bg: #f5f0fc;
+  --panel: #ffffff;
+  --panel2: #efe3fb;
+  --border: #ddccf0;
+  --text: #372b4a;
+  --muted: #8779a0;
+  --accent: #7c5cff;
+  --accent-bg: rgba(124,92,255,0.14);
+  --off: #e0517a;
+  --off-bg: rgba(224,81,122,0.12);
+  --today: #d99a2b;
+  --danger: #d93a52;
+  --sun: #d9436a;
+  --sat: #4f7fe0;
+  --pay: #16a34a;
+  --memo: #a24fd6;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
@@ -44,7 +44,7 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
 
 .view-switch { display:flex; gap:6px; background:var(--panel2); padding:4px; border-radius:10px; margin-bottom:14px; }
 .view-switch button { flex:1; padding:9px; border:none; background:transparent; color:var(--muted); border-radius:8px; font-size:.85rem; font-weight:700; }
-.view-switch button.active { background:var(--accent); color:#0d0f14; }
+.view-switch button.active { background:var(--accent); color:#ffffff; }
 
 .wage-row { display:flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:9px 12px; margin-bottom:14px; }
 .wage-label { font-size:.85rem; color:var(--muted); }
@@ -116,7 +116,7 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
 .pay-preview { font-size:.78rem; color:var(--pay); margin:-6px 0 14px; min-height:1.1em; }
 .sheet-actions { display:flex; gap:8px; margin-top:18px; }
 .sheet-actions button { flex:1; padding:12px; border-radius:10px; border:1px solid var(--border); font-size:.9rem; font-weight:600; }
-.btn-save { background:var(--accent); color:#0d0f14; border-color:var(--accent); }
+.btn-save { background:var(--accent); color:#ffffff; border-color:var(--accent); }
 .btn-clear { background:var(--panel2); color: var(--off); }
 .btn-cancel { background:transparent; color:var(--muted); }
 

@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>バイトシフト確認 - カレンダーでシフトと給与をひと目で管理</title>
 <meta name="description" content="カレンダーにバイトの開始・終了時間を入力するだけ。休みの日は自動で色分け、時給を入れれば給与も自動計算。音声入力にも対応した、インストール不要のシフト確認アプリです。">
+<link rel="icon" href="./app/icons/icon-192.png">
+<link rel="apple-touch-icon" href="./app/icons/icon-192.png">
 <style>
   :root {
     --bg: #0d0f14;
@@ -30,7 +32,7 @@
 
   header.site { display: flex; align-items: center; padding: 18px 0; }
   header.site .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; }
-  header.site .brand .logo { font-size: 22px; }
+  header.site .brand img { width: 28px; height: 28px; border-radius: 8px; }
 
   .hero { padding: 56px 0 48px; text-align: center; }
   .hero h1 { font-size: clamp(24px, 5vw, 38px); margin: 0 0 16px; font-weight: 800; letter-spacing: 0.01em; }
@@ -104,7 +106,7 @@
 
   <header class="site">
     <div class="wrap brand">
-      <span class="logo">🗓️</span>
+      <img src="./app/icons/icon-192.png" alt="バイトシフト確認アイコン">
       <span>バイトシフト確認</span>
     </div>
   </header>

@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>バイトシフト確認</title>
+<style>
+:root {
+  --bg: #0d0f14;
+  --panel: #171a22;
+  --panel2: #1f2330;
+  --border: #2a2f3d;
+  --text: #e8eaf0;
+  --muted: #7c8296;
+  --accent: #3ea6ff;
+  --accent-bg: rgba(62,166,255,0.16);
+  --off: #ff7a90;
+  --off-bg: rgba(255,122,144,0.12);
+  --today: #ffcf5c;
+  --danger: #ff5c6c;
+  --sun: #ff8a8a;
+  --sat: #7ab8ff;
+  --pay: #4ade80;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin:0; padding:0; height:100%;
+  background: var(--bg); color: var(--text);
+  font-family: "Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+}
+body { display:flex; justify-content:center; }
+.app { width:100%; max-width:480px; min-height:100vh; display:flex; flex-direction:column; padding:16px 12px 90px; }
+.hidden { display:none !important; }
+
+h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02em; }
+
+.view-switch { display:flex; gap:6px; background:var(--panel2); padding:4px; border-radius:10px; margin-bottom:14px; }
+.view-switch button { flex:1; padding:9px; border:none; background:transparent; color:var(--muted); border-radius:8px; font-size:.85rem; font-weight:700; }
+.view-switch button.active { background:var(--accent); color:#0d0f14; }
+
+.wage-row { display:flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:9px 12px; margin-bottom:14px; }
+.wage-label { font-size:.85rem; color:var(--muted); }
+.wage-input { flex:1; min-width:0; background:transparent; border:none; color:var(--text); font-size:1rem; text-align:right; }
+.wage-input:focus { outline:none; }
+.wage-unit { font-size:.85rem; color:var(--muted); }
+
+.month-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.month-nav button { background:var(--panel2); border:1px solid var(--border); color:var(--text); font-size:1.1rem; width:40px; height:40px; border-radius:10px; }
+.month-label { font-size:1.15rem; font-weight:700; }
+.today-btn { font-size:.75rem; background:var(--panel2); border:1px solid var(--border); color:var(--muted); border-radius:999px; padding:4px 10px; margin-left:8px; }
+
+.weekdays { display:grid; grid-template-columns: repeat(7,1fr); text-align:center; font-size:.78rem; color:var(--muted); margin-bottom:6px; }
+.weekdays span:first-child { color: var(--sun); }
+.weekdays span:last-child { color: var(--sat); }
+
+.grid { display:grid; grid-template-columns: repeat(7,1fr); gap:5px; }
+.cell { position:relative; aspect-ratio: 1/1; border-radius:10px; background:var(--panel); border:1px solid var(--border); padding:4px; display:flex; flex-direction:column; }
+.cell.blank { background:transparent; border-color:transparent; }
+.cell.off { background:var(--off-bg); border-color: rgba(255,122,144,0.35); }
+.cell.work { background:var(--accent-bg); border-color: rgba(62,166,255,0.4); }
+.cell.today { outline:2px solid var(--today); outline-offset:-1px; }
+.cell button.daybtn { all:unset; display:flex; flex-direction:column; width:100%; height:100%; cursor:pointer; }
+.daynum { font-size:.78rem; color:var(--muted); }
+.cell.work .daynum, .cell.off .daynum { color: var(--text); }
+.tag { margin-top:auto; font-size:.6rem; line-height:1.15; word-break:break-all; }
+.tag.work-tag { color: var(--accent); font-weight:700; }
+.tag.off-tag { color: var(--off); font-weight:700; }
+
+.week-list { display:flex; flex-direction:column; gap:8px; }
+.week-row { all:unset; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border-radius:12px; background:var(--panel); border:1px solid var(--border); cursor:pointer; }
+.week-row.work { background:var(--accent-bg); border-color: rgba(62,166,255,0.4); }
+.week-row.off { background:var(--off-bg); border-color: rgba(255,122,144,0.35); }
+.week-row.today { outline:2px solid var(--today); outline-offset:-1px; }
+.week-date { display:flex; flex-direction:column; align-items:center; min-width:44px; }
+.week-date .wd { font-size:.7rem; color:var(--muted); }
+.week-date .dn { font-size:1.1rem; font-weight:700; }
+.week-row.sun .wd, .week-row.sun .dn { color: var(--sun); }
+.week-row.sat .wd, .week-row.sat .dn { color: var(--sat); }
+.week-status { font-size:.9rem; font-weight:700; }
+.week-status.work-tag { color: var(--accent); }
+.week-status.off-tag { color: var(--off); }
+
+.summary { margin-top:16px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:14px 8px; display:grid; grid-template-columns: repeat(3,1fr); gap:6px; font-size:.72rem; text-align:center; }
+.summary .stat b { display:block; margin-top:5px; font-size:.95rem; color: var(--accent); }
+.summary .stat.pay b { color: var(--pay); }
+
+.footer-actions { position:fixed; bottom:0; left:0; right:0; display:flex; justify-content:center; background:linear-gradient(to top, var(--bg) 60%, transparent); padding:14px 12px 18px; }
+.footer-actions .inner { width:100%; max-width:480px; display:flex; gap:8px; }
+.reset-btn { flex:1; background:var(--panel2); border:1px solid var(--border); color:var(--danger); padding:12px; border-radius:10px; font-size:.85rem; }
+
+.overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:flex-end; justify-content:center; z-index:20; }
+.overlay.hidden { display:none; }
+.sheet { width:100%; max-width:480px; background:var(--panel); border-radius:18px 18px 0 0; padding:20px 18px 26px; border:1px solid var(--border); border-bottom:none; }
+.sheet h2 { margin:0 0 14px; font-size:1rem; }
+.field { margin-bottom:14px; }
+.field label { display:block; font-size:.8rem; color:var(--muted); margin-bottom:6px; }
+.field input[type=time] { width:100%; background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:10px; border-radius:8px; font-size:1rem; }
+.time-row { display:flex; gap:8px; }
+.time-row input[type=time] { flex:1; }
+.mic-btn { flex:0 0 44px; background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:8px; font-size:1.1rem; }
+.mic-btn.listening { background:var(--danger); color:#fff; border-color:var(--danger); animation:pulse 1s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.55; } }
+.voice-hint { font-size:.7rem; color:var(--muted); margin:-6px 0 14px; }
+.pay-preview { font-size:.78rem; color:var(--pay); margin:-6px 0 14px; min-height:1.1em; }
+.sheet-actions { display:flex; gap:8px; margin-top:18px; }
+.sheet-actions button { flex:1; padding:12px; border-radius:10px; border:1px solid var(--border); font-size:.9rem; font-weight:600; }
+.btn-save { background:var(--accent); color:#0d0f14; border-color:var(--accent); }
+.btn-clear { background:var(--panel2); color: var(--off); }
+.btn-cancel { background:transparent; color:var(--muted); }
+
+.confirm-box { text-align:center; }
+.confirm-box p { color: var(--muted); font-size:.85rem; }
+.confirm-actions { display:flex; gap:8px; margin-top:16px; }
+.confirm-actions button { flex:1; padding:12px; border-radius:10px; border:1px solid var(--border); font-weight:600; }
+.confirm-actions .yes { background: var(--danger); color:#fff; border-color:var(--danger); }
+.confirm-actions .no { background:var(--panel2); color:var(--text); }
+
+.hint { text-align:center; color:var(--muted); font-size:.72rem; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>バイトシフト確認</h1>
+
+  <div class="view-switch">
+    <button data-view="month" class="active" id="view-month-btn">月表示</button>
+    <button data-view="week" id="view-week-btn">週表示</button>
+  </div>
+
+  <div class="wage-row">
+    <span class="wage-label">時給</span>
+    <input type="number" id="wage-input" class="wage-input" min="0" step="10" placeholder="1200" inputmode="numeric">
+    <span class="wage-unit">円</span>
+  </div>
+
+  <div class="month-nav" id="month-nav">
+    <button id="prev-month" aria-label="前の月">‹</button>
+    <div style="display:flex; align-items:center;">
+      <span class="month-label" id="month-label"></span>
+      <button class="today-btn" id="today-btn">今日</button>
+    </div>
+    <button id="next-month" aria-label="次の月">›</button>
+  </div>
+
+  <div class="month-nav" id="week-nav">
+    <button id="prev-week" aria-label="前の週">‹</button>
+    <div style="display:flex; align-items:center;">
+      <span class="month-label" id="week-label"></span>
+      <button class="today-btn" id="this-week-btn">今週</button>
+    </div>
+    <button id="next-week" aria-label="次の週">›</button>
+  </div>
+
+  <div class="weekdays" id="weekdays-row">
+    <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="week-list hidden" id="week-list"></div>
+
+  <div class="summary">
+    <div class="stat"><span id="sum-label-count">今月のシフト日数</span><b id="sum-count">0日</b></div>
+    <div class="stat"><span id="sum-label-hours">今月の合計勤務時間</span><b id="sum-hours">0時間0分</b></div>
+    <div class="stat pay"><span id="sum-label-pay">今月の概算給与</span><b id="sum-pay">¥0</b></div>
+  </div>
+
+  <p class="hint">日付をタップして開始・終了時間を入力できます</p>
+</div>
+
+<div class="footer-actions">
+  <div class="inner">
+    <button class="reset-btn" id="reset-all-btn">全シフトを削除</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="day-overlay">
+  <div class="sheet">
+    <h2 id="sheet-date"></h2>
+    <div class="field">
+      <label for="start-input">開始時間</label>
+      <div class="time-row">
+        <input type="time" id="start-input">
+        <button type="button" class="mic-btn" id="start-mic" aria-label="音声入力(開始時間)">🎤</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="end-input">終了時間</label>
+      <div class="time-row">
+        <input type="time" id="end-input">
+        <button type="button" class="mic-btn" id="end-mic" aria-label="音声入力(終了時間)">🎤</button>
+      </div>
+    </div>
+    <p class="voice-hint">🎤をタップして「9時」「9時半」「17時30分」のように話すと自動入力されます</p>
+    <p class="pay-preview" id="pay-preview"></p>
+    <div class="sheet-actions">
+      <button class="btn-cancel" id="cancel-btn">キャンセル</button>
+      <button class="btn-clear" id="clear-btn">休みにする</button>
+      <button class="btn-save" id="save-btn">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="reset-overlay">
+  <div class="sheet confirm-box">
+    <h2>全シフトを削除しますか？</h2>
+    <p>この操作は取り消せません。すべての登録済みシフトが削除されます。</p>
+    <div class="confirm-actions">
+      <button class="no" id="reset-no">キャンセル</button>
+      <button class="yes" id="reset-yes">削除する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = "baito-shift-state-v1";
+
+  function loadState(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return { shifts: {}, viewMode: "month" };
+  }
+  function saveState(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  const state = loadState();
+  if (!state.viewMode) state.viewMode = "month";
+
+  const today = new Date();
+  let viewYear = today.getFullYear();
+  let viewMonth = today.getMonth();
+  let weekStart = startOfWeek(today);
+  let activeDateKey = null;
+
+  const viewMonthBtn = document.getElementById("view-month-btn");
+  const viewWeekBtn = document.getElementById("view-week-btn");
+  const monthNav = document.getElementById("month-nav");
+  const weekNav = document.getElementById("week-nav");
+  const weekdaysRow = document.getElementById("weekdays-row");
+  const monthLabel = document.getElementById("month-label");
+  const weekLabel = document.getElementById("week-label");
+  const grid = document.getElementById("grid");
+  const weekList = document.getElementById("week-list");
+  const sumLabelCount = document.getElementById("sum-label-count");
+  const sumLabelHours = document.getElementById("sum-label-hours");
+  const sumLabelPay = document.getElementById("sum-label-pay");
+  const sumCount = document.getElementById("sum-count");
+  const sumHours = document.getElementById("sum-hours");
+  const sumPay = document.getElementById("sum-pay");
+  const wageInput = document.getElementById("wage-input");
+
+  const dayOverlay = document.getElementById("day-overlay");
+  const sheetDate = document.getElementById("sheet-date");
+  const startInput = document.getElementById("start-input");
+  const endInput = document.getElementById("end-input");
+  const payPreview = document.getElementById("pay-preview");
+
+  const resetOverlay = document.getElementById("reset-overlay");
+
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function dateKey(y,m,d){ return `${y}-${pad(m+1)}-${pad(d)}`; }
+  function startOfWeek(d){
+    const s = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    s.setDate(s.getDate() - s.getDay());
+    return s;
+  }
+  function addDays(d, n){
+    const r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+  }
+
+  function toMinutes(t){
+    const [h,m] = t.split(":").map(Number);
+    return h*60+m;
+  }
+
+  function shiftHours(shift){
+    let diff = toMinutes(shift.end) - toMinutes(shift.start);
+    if (diff <= 0) diff += 24*60;
+    return diff/60;
+  }
+
+  function formatHours(totalHours){
+    const totalMinutes = Math.round(totalHours*60);
+    const h = Math.floor(totalMinutes/60);
+    const m = totalMinutes%60;
+    return `${h}時間${m}分`;
+  }
+
+  function getWage(){
+    return state.hourlyWage || 0;
+  }
+
+  function formatYen(amount){
+    return "¥" + Math.round(amount).toLocaleString("ja-JP");
+  }
+
+  const WEEKDAY_LABELS = ["日","月","火","水","木","金","土"];
+
+  function render(){
+    if (state.viewMode === "week") renderWeek();
+    else renderMonth();
+  }
+
+  function updateViewVisibility(){
+    const isWeek = state.viewMode === "week";
+    viewMonthBtn.classList.toggle("active", !isWeek);
+    viewWeekBtn.classList.toggle("active", isWeek);
+    monthNav.classList.toggle("hidden", isWeek);
+    weekdaysRow.classList.toggle("hidden", isWeek);
+    grid.classList.toggle("hidden", isWeek);
+    weekNav.classList.toggle("hidden", !isWeek);
+    weekList.classList.toggle("hidden", !isWeek);
+    sumLabelCount.textContent = isWeek ? "今週のシフト日数" : "今月のシフト日数";
+    sumLabelHours.textContent = isWeek ? "今週の合計勤務時間" : "今月の合計勤務時間";
+  }
+
+  function renderMonth(){
+    monthLabel.textContent = `${viewYear}年${viewMonth+1}月`;
+
+    const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+    const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+
+    grid.innerHTML = "";
+
+    for (let i=0; i<firstDay; i++){
+      const blank = document.createElement("div");
+      blank.className = "cell blank";
+      grid.appendChild(blank);
+    }
+
+    let monthCount = 0;
+    let monthHours = 0;
+
+    for (let d=1; d<=daysInMonth; d++){
+      const key = dateKey(viewYear, viewMonth, d);
+      const shift = state.shifts[key];
+      const isToday = viewYear===today.getFullYear() && viewMonth===today.getMonth() && d===today.getDate();
+
+      const cell = document.createElement("div");
+      cell.className = "cell " + (shift ? "work" : "off") + (isToday ? " today" : "");
+
+      const btn = document.createElement("button");
+      btn.className = "daybtn";
+      btn.addEventListener("click", () => openDayModal(key));
+
+      const num = document.createElement("span");
+      num.className = "daynum";
+      num.textContent = d;
+      btn.appendChild(num);
+
+      const tag = document.createElement("span");
+      if (shift){
+        tag.className = "tag work-tag";
+        tag.textContent = `${shift.start}-${shift.end}`;
+        monthCount++;
+        monthHours += shiftHours(shift);
+      } else {
+        tag.className = "tag off-tag";
+        tag.textContent = "休み";
+      }
+      btn.appendChild(tag);
+
+      cell.appendChild(btn);
+      grid.appendChild(cell);
+    }
+
+    sumCount.textContent = `${monthCount}日`;
+    sumHours.textContent = formatHours(monthHours);
+    sumPay.textContent = formatYen(monthHours * getWage());
+  }
+
+  function renderWeek(){
+    const end = addDays(weekStart, 6);
+    const sameMonth = weekStart.getMonth() === end.getMonth();
+    weekLabel.textContent = sameMonth
+      ? `${weekStart.getMonth()+1}月${weekStart.getDate()}日〜${end.getDate()}日`
+      : `${weekStart.getMonth()+1}月${weekStart.getDate()}日〜${end.getMonth()+1}月${end.getDate()}日`;
+
+    weekList.innerHTML = "";
+
+    let weekCount = 0;
+    let weekHours = 0;
+
+    for (let i=0; i<7; i++){
+      const d = addDays(weekStart, i);
+      const key = dateKey(d.getFullYear(), d.getMonth(), d.getDate());
+      const shift = state.shifts[key];
+      const isToday = d.getFullYear()===today.getFullYear() && d.getMonth()===today.getMonth() && d.getDate()===today.getDate();
+
+      const row = document.createElement("button");
+      row.className = "week-row " + (shift ? "work" : "off") + (isToday ? " today" : "")
+        + (i===0 ? " sun" : "") + (i===6 ? " sat" : "");
+      row.addEventListener("click", () => openDayModal(key));
+
+      const dateBox = document.createElement("span");
+      dateBox.className = "week-date";
+      const wd = document.createElement("span");
+      wd.className = "wd";
+      wd.textContent = WEEKDAY_LABELS[i];
+      const dn = document.createElement("span");
+      dn.className = "dn";
+      dn.textContent = `${d.getMonth()+1}/${d.getDate()}`;
+      dateBox.appendChild(wd);
+      dateBox.appendChild(dn);
+
+      const status = document.createElement("span");
+      if (shift){
+        status.className = "week-status work-tag";
+        status.textContent = `${shift.start} 〜 ${shift.end}`;
+        weekCount++;
+        weekHours += shiftHours(shift);
+      } else {
+        status.className = "week-status off-tag";
+        status.textContent = "休み";
+      }
+
+      row.appendChild(dateBox);
+      row.appendChild(status);
+      weekList.appendChild(row);
+    }
+
+    sumCount.textContent = `${weekCount}日`;
+    sumHours.textContent = formatHours(weekHours);
+    sumPay.textContent = formatYen(weekHours * getWage());
+  }
+
+  function updatePayPreview(){
+    const wage = getWage();
+    if (!wage || !startInput.value || !endInput.value){
+      payPreview.textContent = "";
+      return;
+    }
+    const hours = shiftHours({ start: startInput.value, end: endInput.value });
+    payPreview.textContent = `この日の勤務時間: ${formatHours(hours)} ／ 見込み給与: ${formatYen(hours*wage)}`;
+  }
+
+  function openDayModal(key){
+    activeDateKey = key;
+    const shift = state.shifts[key];
+    const [y,m,d] = key.split("-").map(Number);
+    sheetDate.textContent = `${y}年${m}月${d}日`;
+    startInput.value = shift ? shift.start : "";
+    endInput.value = shift ? shift.end : "";
+    updatePayPreview();
+    dayOverlay.classList.remove("hidden");
+  }
+  function closeDayModal(){
+    dayOverlay.classList.add("hidden");
+    activeDateKey = null;
+  }
+
+  document.getElementById("cancel-btn").addEventListener("click", closeDayModal);
+  dayOverlay.addEventListener("click", (e) => { if (e.target === dayOverlay) closeDayModal(); });
+  startInput.addEventListener("input", updatePayPreview);
+  endInput.addEventListener("input", updatePayPreview);
+
+  document.getElementById("save-btn").addEventListener("click", () => {
+    if (!activeDateKey) return;
+    const start = startInput.value;
+    const end = endInput.value;
+    if (!start || !end){
+      alert("開始時間と終了時間を入力してください");
+      return;
+    }
+    state.shifts[activeDateKey] = { start, end };
+    saveState();
+    closeDayModal();
+    render();
+  });
+
+  document.getElementById("clear-btn").addEventListener("click", () => {
+    if (!activeDateKey) return;
+    delete state.shifts[activeDateKey];
+    saveState();
+    closeDayModal();
+    render();
+  });
+
+  document.getElementById("prev-month").addEventListener("click", () => {
+    viewMonth--;
+    if (viewMonth < 0){ viewMonth = 11; viewYear--; }
+    render();
+  });
+  document.getElementById("next-month").addEventListener("click", () => {
+    viewMonth++;
+    if (viewMonth > 11){ viewMonth = 0; viewYear++; }
+    render();
+  });
+  document.getElementById("today-btn").addEventListener("click", () => {
+    viewYear = today.getFullYear();
+    viewMonth = today.getMonth();
+    render();
+  });
+
+  document.getElementById("prev-week").addEventListener("click", () => {
+    weekStart = addDays(weekStart, -7);
+    render();
+  });
+  document.getElementById("next-week").addEventListener("click", () => {
+    weekStart = addDays(weekStart, 7);
+    render();
+  });
+  document.getElementById("this-week-btn").addEventListener("click", () => {
+    weekStart = startOfWeek(today);
+    render();
+  });
+
+  viewMonthBtn.addEventListener("click", () => {
+    state.viewMode = "month";
+    saveState();
+    updateViewVisibility();
+    render();
+  });
+  viewWeekBtn.addEventListener("click", () => {
+    state.viewMode = "week";
+    saveState();
+    updateViewVisibility();
+    render();
+  });
+
+  function createRecognition(){
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return null;
+    const r = new SR();
+    r.lang = "ja-JP";
+    r.interimResults = false;
+    r.maxAlternatives = 1;
+    return r;
+  }
+
+  function toHalfWidthDigits(text){
+    return text.replace(/[0-9]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0));
+  }
+
+  function parseTimeText(text){
+    const t = toHalfWidthDigits(text);
+    let m = t.match(/(\d{1,2})\s*時\s*半/);
+    if (m) return `${pad(Number(m[1])%24)}:30`;
+    m = t.match(/(\d{1,2})\s*時\s*(\d{1,2})\s*分/);
+    if (m) return `${pad(Number(m[1])%24)}:${pad(Number(m[2])%60)}`;
+    m = t.match(/(\d{1,2})\s*時/);
+    if (m) return `${pad(Number(m[1])%24)}:00`;
+    m = t.match(/(\d{1,2})[:：](\d{2})/);
+    if (m) return `${pad(Number(m[1])%24)}:${pad(Number(m[2])%60)}`;
+    return null;
+  }
+
+  function bindMic(button, input){
+    button.addEventListener("click", () => {
+      const recognition = createRecognition();
+      if (!recognition){
+        alert("お使いのブラウザは音声入力に対応していません");
+        return;
+      }
+      button.classList.add("listening");
+      button.textContent = "●";
+      recognition.start();
+      recognition.onresult = (e) => {
+        const text = e.results[0][0].transcript;
+        const time = parseTimeText(text);
+        if (time){
+          input.value = time;
+          updatePayPreview();
+        } else {
+          alert(`認識結果: 「${text}」\n時間として読み取れませんでした。「9時」「9時半」のように話してください。`);
+        }
+      };
+      recognition.onerror = (e) => {
+        alert("音声を認識できませんでした: " + e.error);
+      };
+      recognition.onend = () => {
+        button.classList.remove("listening");
+        button.textContent = "🎤";
+      };
+    });
+  }
+
+  bindMic(document.getElementById("start-mic"), startInput);
+  bindMic(document.getElementById("end-mic"), endInput);
+
+  document.getElementById("reset-all-btn").addEventListener("click", () => {
+    resetOverlay.classList.remove("hidden");
+  });
+  document.getElementById("reset-no").addEventListener("click", () => {
+    resetOverlay.classList.add("hidden");
+  });
+  document.getElementById("reset-yes").addEventListener("click", () => {
+    state.shifts = {};
+    saveState();
+    resetOverlay.classList.add("hidden");
+    render();
+  });
+
+  wageInput.value = state.hourlyWage ? state.hourlyWage : "";
+  wageInput.addEventListener("input", () => {
+    const v = parseFloat(wageInput.value);
+    state.hourlyWage = isNaN(v) || v < 0 ? 0 : v;
+    saveState();
+    render();
+    updatePayPreview();
+  });
+
+  updateViewVisibility();
+  render();
+})();
+</script>
+</body>
+</html>

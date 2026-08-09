@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>バイトシフト確認 - カレンダーでシフトと給与をひと目で管理</title>
+<meta name="description" content="カレンダーにバイトの開始・終了時間を入力するだけ。休みの日は自動で色分け、時給を入れれば給与も自動計算。音声入力にも対応した、インストール不要のシフト確認アプリです。">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --panel: #171a22;
+    --panel2: #1f2330;
+    --border: #2a2f3d;
+    --text: #e8eaf0;
+    --sub: #7c8296;
+    --accent: #3ea6ff;
+    --accent-dark: #2a86d8;
+    --off: #ff7a90;
+    --pay: #4ade80;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Segoe UI", sans-serif;
+    line-height: 1.7;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+
+  header.site { display: flex; align-items: center; padding: 18px 0; }
+  header.site .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; }
+  header.site .brand .logo { font-size: 22px; }
+
+  .hero { padding: 56px 0 48px; text-align: center; }
+  .hero h1 { font-size: clamp(24px, 5vw, 38px); margin: 0 0 16px; font-weight: 800; letter-spacing: 0.01em; }
+  .hero h1 .accent { color: var(--accent); }
+  .hero p { color: var(--sub); font-size: 16px; max-width: 580px; margin: 0 auto 30px; }
+  .cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 15px;
+    text-decoration: none; cursor: pointer; border: 1px solid transparent; transition: transform 0.15s ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #0b0f18; }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-secondary { background: var(--panel); color: var(--text); border-color: var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); }
+
+  section { padding: 56px 0; }
+  h2.section-title { text-align: center; font-size: 22px; margin: 0 0 36px; font-weight: 800; }
+
+  .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .feature-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+  .feature-card .icon { font-size: 26px; margin-bottom: 10px; }
+  .feature-card h3 { margin: 0 0 8px; font-size: 15px; }
+  .feature-card p { margin: 0; color: var(--sub); font-size: 13.5px; }
+
+  .preview-wrap { display: flex; justify-content: center; }
+  .app-mock {
+    width: 100%; max-width: 340px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 18px; padding: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+  }
+  .mock-header { font-weight: 800; font-size: 14px; margin-bottom: 12px; text-align: center; }
+  .mock-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:12px; color: var(--sub); }
+  .mock-nav .label { font-weight:700; color: var(--text); font-size: 13px; }
+  .mock-weekdays { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:9px; color:var(--sub); margin-bottom:5px; }
+  .mock-weekdays span:first-child { color: var(--off); }
+  .mock-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom: 12px; }
+  .mock-cell { aspect-ratio:1/1; border-radius:6px; background: var(--panel); border:1px solid var(--border); font-size:8px; padding:3px; display:flex; flex-direction:column; color: var(--sub); }
+  .mock-cell.work { background: rgba(62,166,255,0.16); border-color: rgba(62,166,255,0.4); color: var(--accent); font-weight:700; }
+  .mock-cell.off { background: rgba(255,122,144,0.12); border-color: rgba(255,122,144,0.35); color: var(--off); font-weight:700; }
+  .mock-cell .n { color: var(--sub); font-weight:400; }
+  .mock-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; background: var(--panel); border:1px solid var(--border); border-radius:10px; padding:10px 6px; text-align:center; }
+  .mock-summary div { font-size: 9px; color: var(--sub); }
+  .mock-summary b { display:block; margin-top:3px; font-size: 12px; color: var(--accent); }
+  .mock-summary .pay b { color: var(--pay); }
+
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; }
+  .step { text-align: center; }
+  .step .num {
+    width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: #0b0f18;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; margin: 0 auto 12px;
+  }
+  .step h3 { margin: 0 0 6px; font-size: 14.5px; }
+  .step p { margin: 0; color: var(--sub); font-size: 13px; }
+
+  .final-cta {
+    background: linear-gradient(135deg, var(--panel), var(--panel2));
+    border: 1px solid var(--border); text-align: center; border-radius: 20px; padding: 52px 24px;
+  }
+  .final-cta h2 { margin: 0 0 12px; font-size: 22px; }
+  .final-cta p { margin: 0 0 26px; color: var(--sub); }
+
+  .note {
+    max-width: 660px; margin: 0 auto; text-align: center; color: var(--sub); font-size: 13px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px;
+  }
+
+  footer { text-align: center; padding: 30px 0; color: var(--sub); font-size: 13px; }
+</style>
+</head>
+<body>
+
+  <header class="site">
+    <div class="wrap brand">
+      <span class="logo">🗓️</span>
+      <span>バイトシフト確認</span>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <h1>シフトも給料も、<span class="accent">ひと目で分かる。</span></h1>
+      <p>カレンダーにバイトの開始・終了時間を入力するだけ。休みの日は自動で色分けされ、時給を登録すればその月の給与まで自動で計算されます。インストール不要、ブラウザで今すぐ使えます。</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="./app/index.html">今すぐアプリを起動する</a>
+        <a class="btn btn-secondary" href="#features">できることを見る</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <h2 class="section-title">できること</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="icon">🎨</div>
+          <h3>休みの日を自動で色分け</h3>
+          <p>シフトを入れた日は青、入っていない日(休み)は赤系で自動的に色分けされるので、カレンダーを見るだけで一目瞭然です。</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📅</div>
+          <h3>月表示・週表示を切り替え</h3>
+          <p>1ヶ月分をまとめて見たい時はカレンダー表示、直近1週間だけサクッと確認したい時はリスト表示に切り替えられます。</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🎤</div>
+          <h3>音声入力で時間登録</h3>
+          <p>マイクボタンをタップして「9時」「9時半」と話すだけで、開始・終了時間が自動入力されます。</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">💰</div>
+          <h3>時給を入れれば給与も自動計算</h3>
+          <p>時給を1回登録しておくだけで、月間・週間の合計勤務時間と概算給与を自動で集計します。</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🌙</div>
+          <h3>日またぎシフトにも対応</h3>
+          <p>終了時間が開始時間より前(深夜勤務など)でも、勤務時間を正しく計算します。</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">💾</div>
+          <h3>ブラウザに自動保存</h3>
+          <p>入力したシフトはお使いの端末のブラウザ内(localStorage)に保存されます。サーバーには送信されません。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title">こんな画面で使えます</h2>
+      <div class="preview-wrap">
+        <div class="app-mock">
+          <div class="mock-header">🗓️ バイトシフト確認</div>
+          <div class="mock-nav">
+            <span>‹</span>
+            <span class="label">2026年8月</span>
+            <span>›</span>
+          </div>
+          <div class="mock-weekdays">
+            <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+          </div>
+          <div class="mock-grid" id="mock-grid"></div>
+          <div class="mock-summary">
+            <div>シフト日数<b>12日</b></div>
+            <div>合計勤務時間<b>84時間</b></div>
+            <div class="pay">概算給与<b>¥109,200</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title">使い方</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="num">1</div>
+          <h3>時給を入力</h3>
+          <p>上部の「時給」欄に自分の時給を入れておくと、給与が自動で計算されます。</p>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <h3>日付をタップ</h3>
+          <p>シフトのある日をカレンダー(または週リスト)からタップします。</p>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <h3>開始・終了時間を入力</h3>
+          <p>手入力、または🎤ボタンで音声入力して保存します。</p>
+        </div>
+        <div class="step">
+          <div class="num">4</div>
+          <h3>色分けと集計を確認</h3>
+          <p>シフトのある日は青、休みの日は赤で自動表示。月間・週間の勤務時間と給与もすぐ確認できます。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="final-cta">
+        <h2>さっそく使ってみる</h2>
+        <p>インストール不要。ブラウザで開くだけですぐに使えます。</p>
+        <a class="btn btn-primary" href="./app/index.html">アプリを起動する</a>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="note">
+        ※ シフトデータは端末のブラウザ内(localStorage)に保存される個人向けアプリです。端末やブラウザを変えるとデータは引き継がれません。<br>
+        ※ 給与は「勤務時間 × 時給」の単純計算です。深夜割増や交通費、税金などは含まれません。
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p>バイトシフト確認 &mdash; 個人開発</p>
+    </div>
+  </footer>
+
+  <script>
+    (function(){
+      const grid = document.getElementById("mock-grid");
+      const workDays = new Set([2,3,6,7,10,11,14,15,18,19,22,23]);
+      const firstDay = 6; // 2026年8月1日は土曜
+      const daysInMonth = 31;
+      for (let i=0;i<firstDay;i++){
+        const blank = document.createElement("div");
+        blank.style.visibility = "hidden";
+        grid.appendChild(blank);
+      }
+      for (let d=1; d<=daysInMonth; d++){
+        const cell = document.createElement("div");
+        const isWork = workDays.has(d);
+        cell.className = "mock-cell " + (isWork ? "work" : "off");
+        cell.innerHTML = `<span class="n">${d}</span><span>${isWork ? "9-17" : "休み"}</span>`;
+        grid.appendChild(cell);
+      }
+    })();
+  </script>
+
+</body>
+</html>

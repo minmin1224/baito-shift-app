@@ -6,6 +6,11 @@
 <title>バイトシフト確認</title>
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3ea6ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="バイトシフト">
 <style>
 :root {
   --bg: #0d0f14;
@@ -611,6 +616,15 @@ h1 { font-size:1.15rem; text-align:center; margin:4px 0 16px; letter-spacing:.02
   updateViewVisibility();
   render();
 })();
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch((err) => {
+        console.warn("Service worker registration failed:", err);
+      });
+    });
+  }
 </script>
 </body>
 </html>
